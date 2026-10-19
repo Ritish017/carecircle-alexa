@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>CareCircle check-in</title>
+<style>
+ :root{--ok:#0f9d58;--att:#e8a317;--con:#d93025;--ink:#1d2433;--mute:#5f6b7a}
+ body{margin:0;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:#fff}
+ .card{padding:14px 16px;border-radius:14px}
+ .top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+ .pill{font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#fff;padding:3px 9px;border-radius:999px}
+ .ok{background:var(--ok)}.attention{background:var(--att)}.concern{background:var(--con)}
+ h1{font-size:16px;margin:0}
+ .head{margin:6px 0 10px;color:var(--ink)}
+ .row{display:flex;gap:8px;padding:4px 0;border-top:1px solid #eef1f4}
+ .t{width:70px;color:var(--mute);flex:none}
+ .src{color:var(--mute);font-size:11px}
+ .dose{display:inline-block;margin:3px 6px 0 0;padding:3px 8px;border-radius:8px;background:#f2f4f7;font-size:12px}
+ .dose.overdue{background:#fde7e5;color:#a1261b}.dose.taken{background:#e6f4ea;color:#0b6b37}
+ .sample{margin-top:8px;font-size:11px;color:#8a5a00;background:#fff4d6;padding:4px 8px;border-radius:6px}
+ .wait{color:var(--mute)}
+</style></head>
+<body><div class="card" id="root"><div class="wait">Waiting for check-in result…</div></div>
+<script>
+// MCP Apps view (ext-apps 2026-01-26 postMessage dialect): ui/initialize -> initialized -> tool-result.
+const root = document.getElementById('root');
+let nextId = 1;
+function send(msg){ window.parent.postMessage(Object.assign({jsonrpc:'2.0'}, msg), '*'); }
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function render(r){
+  if(!r){ return; }
+  const ev = (r.evidence||[]).map(e => `<div class="row"><div class="t">${esc(e.time)}</div><div>${esc(e.what)}<div class="src">${esc(e.source)}</div></div></div>`).join('');
+  const doses = (r.doses||[]).map(d => `<span class="dose ${d.status}">${esc(d.due)} ${esc(d.medication)} · ${esc(d.status.replace('_',' '))}</span>`).join('');
+  const sample = (r.data_sources||[]).some(s => s.includes('SAMPLE')) ? '<div class="sample">Includes SAMPLE Ring events (authored fixture, not from a Ring device).</div>' : '';
+  root.innerHTML = `<div class="top"><span class="pill ${r.status}">${esc(r.status)}</span><h1>${esc(r.person)} · as of ${esc(r.as_of)}${r.demo_clock?' (demo clock)':''}</h1></div>
+    <div class="head">${esc(r.headline)}</div>${ev}<div style="margin-top:8px">${doses}</div>${sample}`;
+  requestAnimationFrame(() => send({method:'ui/notifications/size-changed', params:{width: document.body.scrollWidth, height: document.documentElement.scrollHeight}}));
+}
+window.addEventListener('message', (e) => {
+  const m = e.data || {};
+  if (m.id === 1 && m.result) { send({method:'ui/notifications/initialized', params:{}}); return; }
+  if (m.method === 'ui/notifications/tool-result') {
+    const p = m.params || {};
+    let data = p.structuredContent;
+    if (!data && p.content && p.content[0] && p.content[0].text) { try { data = JSON.parse(p.content[0].text); } catch(_){} }
+    render(data);
+  }
+});
+send({id: nextId++, method:'ui/initialize', params:{protocolVersion:'2026-01-26', appInfo:{name:'carecircle-check-in-card', version:'0.1.0'}, appCapabilities:{availableDisplayModes:['inline']}}});
+</script></body></html>
