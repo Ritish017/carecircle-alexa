@@ -1,0 +1,29 @@
+{
+  "_note": "Fictional demo household. Edit this file for a real family.",
+  "household": {
+    "id": "dad",
+    "display_name": "Dad",
+    "full_name": "Raghav (fictional demo persona)",
+    "timezone": "Asia/Kolkata",
+    "echo_device": "Dad's Echo Show (simulated)"
+  },
+  "caregivers": [
+    {"id": "you", "name": "You", "relation": "son", "channel": "alexa"},
+    {"id": "priya", "name": "Priya", "relation": "sister", "channel": "ntfy"}
+  ],
+  "medications": [
+    {"id": "amlodipine", "name": "Amlodipine 5 mg", "purpose": "blood pressure", "times": ["08:00"], "grace_minutes": 90},
+    {"id": "metformin", "name": "Metformin 500 mg", "purpose": "blood sugar", "times": ["08:30", "20:30"], "grace_minutes": 90}
+  ],
+  "ring_devices": [
+    {"id": "ava1.ring.device.SAMPLE-FRONTDOOR", "name": "Front Door", "room": "front door", "indoor": false},
+    {"id": "ava1.ring.device.SAMPLE-KITCHEN", "name": "Kitchen Cam", "room": "kitchen", "indoor": true},
+    {"id": "ava1.ring.device.SAMPLE-LIVING", "name": "Living Room Cam", "room": "living room", "indoor": true}
+  ],
+  "routine": {
+    "active_from": "07:00",
+    "active_until": "21:30",
+    "expected_up_by": "08:30",
+    "quiet_alert_minutes": 120
+  }
+}
