@@ -1,0 +1,18 @@
+{
+  "_label": "SAMPLE DATA - written by the CareCircle author to mirror the documented Ring Partner API 'history-events' shape. Not captured from a Ring device or the Ring Developer Playground.",
+  "_shape_source": "https://developer.amazon.com/docs/ring/api-documentation.html#event-history",
+  "events": [
+    {"device": "ava1.ring.device.SAMPLE-KITCHEN",    "event_type": "motion", "sub_type": "human", "at": "06:58", "seconds": 40},
+    {"device": "ava1.ring.device.SAMPLE-FRONTDOOR",  "event_type": "motion", "sub_type": "human", "at": "07:42", "seconds": 25},
+    {"device": "ava1.ring.device.SAMPLE-FRONTDOOR",  "event_type": "motion", "sub_type": "human", "at": "08:05", "seconds": 20},
+    {"device": "ava1.ring.device.SAMPLE-KITCHEN",    "event_type": "motion", "sub_type": "human", "at": "08:10", "seconds": 90},
+    {"device": "ava1.ring.device.SAMPLE-LIVING",     "event_type": "motion", "sub_type": "human", "at": "09:30", "seconds": 60},
+    {"device": "ava1.ring.device.SAMPLE-FRONTDOOR",  "event_type": "ding",   "sub_type": null,    "at": "11:15", "seconds": 10},
+    {"device": "ava1.ring.device.SAMPLE-FRONTDOOR",  "event_type": "motion", "sub_type": "human", "at": "11:16", "seconds": 30},
+    {"device": "ava1.ring.device.SAMPLE-KITCHEN",    "event_type": "motion", "sub_type": "human", "at": "12:40", "seconds": 120},
+    {"device": "ava1.ring.device.SAMPLE-LIVING",     "event_type": "motion", "sub_type": "human", "at": "13:55", "seconds": 45}
+  ],
+  "medication_log": [
+    {"medication": "metformin", "dose_time": "08:30", "taken_at": "08:35", "logged_by": "Dad (voice)"}
+  ]
+}
