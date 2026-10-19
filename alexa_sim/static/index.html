@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CareCircle · Alexa+ simulator</title>
+<style>
+  :root{
+    --bg:#0e1420; --panel:#151d2c; --panel2:#1b2537; --line:#26324a; --ink:#e9eef7; --mute:#93a0b8;
+    --cyan:#2fd3ff; --blue:#1f7bff; --ok:#20c47a; --att:#f5b83d; --con:#ff5a4f; --paper:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 700px at 20% -10%,#1a2a48 0,#0e1420 60%);color:var(--ink);
+       font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+  header{display:flex;align-items:center;gap:14px;padding:14px 26px;border-bottom:1px solid var(--line)}
+  .logo{width:30px;height:30px;border-radius:50%;background:conic-gradient(var(--cyan),var(--blue),var(--cyan));
+        box-shadow:0 0 18px rgba(47,211,255,.5)}
+  header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+  header .sub{color:var(--mute);font-size:13px}
+  .badges{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .badge{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--mute)}
+  .badge b{color:var(--ink);font-weight:600}
+  .badge.sample{background:#3a2c0b;border-color:#6b5114;color:#ffd77a}
+  main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;padding:20px 26px}
+  /* Echo Show device */
+  .device{background:#05070b;border-radius:28px;padding:16px;box-shadow:0 30px 80px rgba(0,0,0,.55),inset 0 0 0 2px #1d2433}
+  .screen{position:relative;background:linear-gradient(180deg,#101a2b,#0b111d);border-radius:16px;height:560px;overflow:hidden;display:flex;flex-direction:column}
+  .lightbar{height:5px;background:#0b111d;transition:background .3s}
+  .lightbar.speaking{background:linear-gradient(90deg,transparent,var(--cyan),var(--blue),var(--cyan),transparent);background-size:200% 100%;animation:sweep 1.2s linear infinite}
+  .lightbar.thinking{background:linear-gradient(90deg,var(--blue),#5a3cff,var(--blue));background-size:200% 100%;animation:sweep 2s linear infinite}
+  .lightbar.alert{background:var(--att)}
+  @keyframes sweep{to{background-position:-200% 0}}
+  .convo{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+  .msg{max-width:88%}
+  .msg.user{align-self:flex-end;background:#22314d;padding:8px 14px;border-radius:16px 16px 4px 16px;color:#cfe0ff;font-size:15px}
+  .msg.alexa{align-self:flex-start;font-size:21px;line-height:1.35;font-weight:500;color:#fff}
+  .msg.alexa.proactive::before{content:"Proactive · from alerts subscription";display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--att);margin-bottom:4px;font-weight:700}
+  .msg.tool{align-self:flex-start;font:12px/1.3 ui-monospace,Menlo,Consolas,monospace;color:#7fd8ff;background:#0d2236;border:1px solid #17405e;padding:4px 9px;border-radius:8px}
+  .msg.alertbox{align-self:stretch;background:#3a2c0b;border:1px solid #806016;color:#ffe2a0;padding:8px 12px;border-radius:10px;font-size:14px}
+  .msg,.cardwrap{flex:none}
+  .cardwrap{align-self:stretch;background:#fff;border-radius:14px;overflow:hidden}
+  .cardwrap iframe{width:100%;border:0;height:300px;display:block}
+  .cardlabel{font-size:11px;color:#5f6b7a;background:#f2f5f9;padding:4px 10px;letter-spacing:.04em}
+  /* consent sheet */
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#f7f9fc;color:#1d2433;border-radius:18px 18px 0 0;padding:18px 22px 20px;
+         transform:translateY(105%);transition:transform .35s ease;box-shadow:0 -20px 50px rgba(0,0,0,.5)}
+  .sheet.open{transform:none}
+  .sheet .kicker{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
+  .sheet h3{margin:4px 0 8px;font-size:19px}
+  .sheet .q{white-space:pre-line;color:#3b4658;font-size:14px;margin-bottom:10px;max-height:110px;overflow:auto}
+  .opt{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1px solid #dde3ec;border-radius:10px;margin:6px 0;background:#fff;font-size:14px}
+  .opt input{margin-top:3px;width:18px;height:18px;accent-color:var(--blue)}
+  .sheet .btns{display:flex;gap:10px;margin-top:12px}
+  .btn{border:0;border-radius:999px;padding:10px 18px;font-weight:700;font-size:15px;cursor:pointer}
+  .btn.yes{background:var(--blue);color:#fff}.btn.no{background:#e3e8f0;color:#1d2433}
+  .sheet .digest{font:11px ui-monospace,monospace;color:#7a8597;margin-top:8px}
+  /* input */
+  .ask{display:flex;gap:10px;margin-top:14px}
+  .mic{width:48px;height:48px;border-radius:50%;border:0;background:var(--blue);color:#fff;font-size:20px;cursor:pointer;flex:none}
+  .mic.on{background:var(--con);box-shadow:0 0 0 6px rgba(255,90,79,.25)}
+  .ask input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:999px;color:var(--ink);padding:0 18px;font-size:15px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .chip{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
+  .chip:hover{border-color:var(--cyan)}
+  /* right side */
+  .side{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+  .box h2{margin:0 0 8px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .status{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;color:#08121f}
+  .status.ok{background:var(--ok)}.status.attention{background:var(--att)}.status.concern{background:var(--con);color:#fff}
+  .tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+  .tab{background:transparent;border:1px solid transparent;color:var(--mute);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:13px}
+  .tab.on{background:var(--panel2);border-color:var(--line);color:var(--ink)}
+  .pane{max-height:300px;overflow:auto}
+  .row{display:flex;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
+  .row:first-child{border-top:0}
+  .row .t{width:72px;color:var(--mute);flex:none}
+  .row .src{font-size:11px;color:var(--mute)}
+  .tag{font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;margin-left:6px;vertical-align:1px}
+  .tag.sample{background:#3a2c0b;color:#ffd77a}.tag.live{background:#0c3b2a;color:#7ff0bd}
+  .mono{font:12px/1.35 ui-monospace,Menlo,Consolas,monospace}
+  .rpc.in{color:#ffd77a}.rpc.out{color:#7fd8ff}
+  .echo{display:flex;gap:12px;align-items:center}
+  .echo .dot{width:42px;height:42px;border-radius:50%;background:#0b111d;border:3px solid #26324a;flex:none}
+  .echo.on .dot{border-color:var(--cyan);box-shadow:0 0 16px var(--cyan)}
+  .echo .txt{font-size:14px;color:var(--mute)}
+  .echo.on .txt{color:var(--ink)}
+  .demo{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .demo .lbl{font-size:11px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;margin-right:4px}
+  .small{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer}
+  .foot{color:var(--mute);font-size:12px;padding:0 26px 18px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"></div>
+  <div><h1>CareCircle <span style="color:var(--mute);font-weight:500">for Alexa+</span></h1>
+       <div class="sub">Simulated Alexa+ experience · real MCP client → CareCircle MCP server</div></div>
+  <div class="badges">
+    <span class="badge">MCP <b id="proto">…</b> · Streamable HTTP</span>
+    <span class="badge">Planner <b id="planner">…</b></span>
+    <span class="badge sample" id="ringmode">Ring: SAMPLE events</span>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="device"><div class="screen">
+      <div class="lightbar" id="light"></div>
+      <div class="convo" id="convo"></div>
+      <div class="sheet" id="sheet">
+        <div class="kicker">CareCircle needs your OK · MCP elicitation</div>
+        <h3 id="sheetTitle">Follow up?</h3>
+        <div class="q" id="sheetMsg"></div>
+        <div id="sheetOpts"></div>
+        <div class="btns"><button class="btn yes" id="yesBtn">Yes, do it</button><button class="btn no" id="noBtn">No</button></div>
+      </div>
+    </div></div>
+    <div class="ask">
+      <button class="mic" id="mic" title="Talk (Chrome)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <input id="q" placeholder="Say or type: “Alexa, is Dad okay today?”" autocomplete="off">
+    </div>
+    <div class="chips" id="chips">
+      <button class="chip">Alexa, is Dad okay today?</button>
+      <button class="chip">Yes, please</button>
+      <button class="chip">Dad says he just took his blood pressure pill</button>
+      <button class="chip">What happened at Dad's this afternoon?</button>
+    </div>
+  </section>
+
+  <aside class="side">
+    <div class="box">
+      <h2>Dad's home today <span class="status" id="status">…</span> <span style="margin-left:auto;color:var(--mute);font-weight:400;font-size:12px" id="now"></span></h2>
+      <div class="tabs" id="tabs">
+        <button class="tab on" data-p="timeline">Ring timeline</button>
+        <button class="tab" data-p="meds">Medications</button>
+        <button class="tab" data-p="consent">Consent log</button>
+        <button class="tab" data-p="sent">Sent</button>
+        <button class="tab" data-p="trace">MCP trace</button>
+      </div>
+      <div class="pane" id="pane"></div>
+    </div>
+    <div class="box">
+      <h2>Dad's Echo Show <span class="badge" style="font-weight:400">simulated speaker</span></h2>
+      <div class="echo" id="echo"><div class="dot"></div><div class="txt" id="echoTxt">Idle. Reminders you approve play here.</div></div>
+    </div>
+    <div class="box demo">
+      <span class="lbl">Demo controls</span>
+      <button class="small" data-demo="reset">Reset sample day</button>
+      <button class="small" data-demo="advance">Clock +60 min</button>
+      <button class="small" data-demo="motion">SAMPLE motion: kitchen</button>
+      <label class="small" style="cursor:pointer"><input type="checkbox" id="voice" checked> voice</label>
+    </div>
+  </aside>
+</main>
+<div class="foot">Ring events marked <span class="tag sample">SAMPLE</span> come from an authored fixture in the documented Ring Partner API shape, not from a Ring device. Medications and people are fictional.</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const convo = $('convo');
+let state = null, pane = 'timeline', trace = [], pendingElicit = null, lastCardHTML = null;
+
+function esc(s){return String(s ?? '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function add(cls, html){ const d=document.createElement('div'); d.className='msg '+cls; d.innerHTML=html; convo.appendChild(d); convo.scrollTop=convo.scrollHeight; return d; }
+function light(mode){ $('light').className = 'lightbar ' + (mode||''); }
+
+function speak(text, done){
+  if(!$('voice').checked || !('speechSynthesis' in window)){ light(''); done && done(); return; }
+  const u = new SpeechSynthesisUtterance(text.replace(/\*/g,''));
+  u.rate = 1.03; light('speaking');
+  u.onend = () => { light(''); done && done(); };
+  u.onerror = () => { light(''); done && done(); };
+  speechSynthesis.speak(u);
+  setTimeout(()=>{ if(!speechSynthesis.speaking) light(''); }, Math.min(12000, 300 + text.length*70));
+}
+
+// ---------- MCP Apps host (minimal): render ui://carecircle/check-in.html and feed it the tool result
+async function renderCard(ev){
+  if(!lastCardHTML){ lastCardHTML = await (await fetch('/api/card')).text(); }
+  const wrap = document.createElement('div'); wrap.className = 'cardwrap';
+  wrap.innerHTML = '<div class="cardlabel">MCP App · ui://carecircle/check-in.html</div>';
+  const f = document.createElement('iframe'); f.setAttribute('sandbox','allow-scripts'); f.srcdoc = lastCardHTML;
+  wrap.appendChild(f); convo.appendChild(wrap); convo.scrollTop = convo.scrollHeight;
+  window.addEventListener('message', function onMsg(e){
+    if(e.source !== f.contentWindow) return;
+    const m = e.data || {};
+    if(m.method === 'ui/initialize'){
+      f.contentWindow.postMessage({jsonrpc:'2.0', id:m.id, result:{protocolVersion:'2026-01-26', hostInfo:{name:'alexa-plus-simulator',version:'0.1.0'}, hostCapabilities:{}, hostContext:{theme:'light', displayMode:'inline'}}}, '*');
+    } else if(m.method === 'ui/notifications/initialized'){
+      f.contentWindow.postMessage({jsonrpc:'2.0', method:'ui/notifications/tool-input', params:{arguments: ev.args||{}}}, '*');
+      f.contentWindow.postMessage({jsonrpc:'2.0', method:'ui/notifications/tool-result', params: ev.result}, '*');
+    } else if(m.method === 'ui/notifications/size-changed' && m.params && m.params.height){
+      f.style.height = Math.min(390, Math.max(160, Math.ceil(m.params.height))) + 'px';
+      convo.scrollTop = convo.scrollHeight;
+    }
+  });
+}
+
+// ---------- elicitation sheet, built from requestedSchema
+function openSheet(ev){
+  pendingElicit = ev;
+  const lines = (ev.message||'').split('\n');
+  $('sheetTitle').textContent = lines[0] || 'Approve?';
+  $('sheetMsg').textContent = '';
+  const props = (ev.schema && ev.schema.properties) || {};
+  $('sheetOpts').innerHTML = Object.entries(props).map(([k,p]) => {
+    if(p.type === 'boolean') return `<label class="opt"><input type="checkbox" data-k="${esc(k)}" ${p.default!==false?'checked':''}><span>${esc(p.title||p.description||k)}</span></label>`;
+    return `<label class="opt" style="display:block"><span>${esc(p.title||k)}</span><input data-k="${esc(k)}" data-t="text" style="width:100%;margin-top:6px;padding:6px;border:1px solid #ccd5e1;border-radius:6px"></label>`;
+  }).join('');
+  $('sheet').classList.add('open'); light('alert');
+}
+async function answer(action){
+  if(!pendingElicit) return;
+  const content = {};
+  document.querySelectorAll('#sheetOpts [data-k]').forEach(i => { content[i.dataset.k] = i.dataset.t==='text' ? i.value : i.checked; });
+  const id = pendingElicit.id; pendingElicit = null;
+  $('sheet').classList.remove('open'); light('thinking');
+  await fetch('/api/elicit/'+id, {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({action, content})});
+}
+$('yesBtn').onclick = () => answer('accept');
+$('noBtn').onclick = () => answer('decline');
+
+// ---------- side panel
+function tag(src){ return /SAMPLE/.test(src) ? '<span class="tag sample">SAMPLE</span>' : '<span class="tag live">LIVE</span>'; }
+function renderPane(){
+  if(!state) return;
+  const p = $('pane'); let h = '';
+  if(pane==='timeline') h = state.timeline.slice().reverse().map(i=>`<div class="row"><div class="t">${esc(i.time)}</div><div>${esc(i.event)} · ${esc(i.device)} ${tag(i.source)}</div></div>`).join('') || '<div class="row">No events yet</div>';
+  if(pane==='meds') h = state.report.doses.map(d=>`<div class="row"><div class="t">${esc(d.due)}</div><div>${esc(d.medication)} <span style="color:var(--mute)">(${esc(d.purpose)})</span><div class="src">${esc(d.status.replace('_',' '))}${d.taken_at?' · taken '+esc(d.taken_at):''}</div></div></div>`).join('');
+  if(pane==='consent') h = state.consent.slice().reverse().map(c=>`<div class="row"><div class="t">${esc(c.time_local)}</div><div><b style="color:${c.outcome==='approved'?'var(--ok)':c.outcome==='denied'?'var(--con)':'var(--att)'}">${esc(c.outcome)}</b> · ${esc(c.method)}<div class="src">${Object.entries(c.choices||{}).map(([k,v])=>(v?'✔ ':'✘ ')+k).join(' · ')}</div><div class="src mono">sha256 ${esc(c.digest.slice(0,16))}…</div></div></div>`).join('') || '<div class="row">No consent requests yet</div>';
+  if(pane==='sent') h = [...state.reminders.map(r=>({t:r.time_local, w:'Echo reminder', x:r.text, s:r.status})), ...state.notifications.map(n=>({t:n.time_local, w:'To '+n.recipient+' via '+n.channel, x:n.text, s:n.status+' · '+n.detail}))].reverse().map(o=>`<div class="row"><div class="t">${esc(o.t)}</div><div><b>${esc(o.w)}</b><div>${esc(o.x)}</div><div class="src">${esc(o.s)}</div></div></div>`).join('') || '<div class="row">Nothing sent yet</div>';
+  if(pane==='trace') h = trace.slice().reverse().map(r=>`<div class="row mono"><div class="rpc ${r.dir}">${r.dir==='out'?'→':'←'} ${esc(r.method)}</div><div style="color:var(--mute)">${esc(r.detail)}</div></div>`).join('') || '<div class="row">No MCP traffic yet</div>';
+  p.innerHTML = h;
+}
+async function refresh(){
+  try{ state = await (await fetch('/api/state')).json(); }catch(_){ return; }
+  $('status').textContent = state.report.status; $('status').className = 'status ' + state.report.status;
+  $('now').textContent = 'household time ' + state.now + (state.demo_clock ? ' (demo clock)' : '');
+  $('ringmode').textContent = state.ring_mode === 'live' ? 'Ring: LIVE API' : 'Ring: SAMPLE events';
+  $('ringmode').className = 'badge ' + (state.ring_mode === 'live' ? '' : 'sample');
+  renderPane();
+}
+$('tabs').onclick = (e) => { const b = e.target.closest('.tab'); if(!b) return; document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on', x===b)); pane = b.dataset.p; renderPane(); };
+
+// ---------- agent events
+const es = new EventSource('/api/stream');
+es.onmessage = (m) => {
+  const ev = JSON.parse(m.data);
+  if(ev.type==='hello' || ev.type==='connected'){ if(ev.planner) $('planner').textContent = ev.planner; if(ev.protocol) $('proto').textContent = ev.protocol; }
+  else if(ev.type==='planner'){ $('planner').textContent = ev.label; }
+  else if(ev.type==='user'){ add('user', esc(ev.text)); light('thinking'); }
+  else if(ev.type==='tool_call'){ add('tool', '⚙ tools/call ' + esc(ev.name) + ' ' + esc(JSON.stringify(ev.args))); }
+  else if(ev.type==='card'){ renderCard(ev); }
+  else if(ev.type==='elicit'){ openSheet(ev); }
+  else if(ev.type==='alert'){ add('alertbox', 'notifications/resources/updated → carecircle://alerts<br>' + esc(ev.text)); light('alert'); }
+  else if(ev.type==='assistant'){ add('alexa' + (ev.proactive?' proactive':''), esc(ev.text)); speak(ev.text); refresh(); }
+  else if(ev.type==='rpc'){ trace.push(ev); if(pane==='trace') renderPane(); if(ev.method==='notifications/resources/updated' && !ev.replay) refresh(); }
+  else if(ev.type==='tool_result'){
+    refresh();
+    if(ev.name==='follow_up' && ev.result && ev.result.reminder){
+      $('echo').classList.add('on'); $('echoTxt').textContent = 'Speaking: “' + ev.result.reminder + '”';
+      setTimeout(()=>$('echo').classList.remove('on'), 9000);
+    }
+  }
+};
+
+async function ask(text){
+  if(!text.trim()) return;
+  $('q').value = '';
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+  await fetch('/api/ask', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({text})});
+}
+$('q').addEventListener('keydown', e => { if(e.key==='Enter') ask($('q').value); });
+$('chips').onclick = (e) => { const c = e.target.closest('.chip'); if(c) ask(c.textContent); };
+
+// voice input (Chrome's Web Speech API); answers the consent sheet by voice too
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if(SR){
+  const rec = new SR(); rec.lang = 'en-IN'; rec.interimResults = false;
+  rec.onresult = (e) => { const t = e.results[0][0].transcript;
+    if(pendingElicit){ if(/\b(yes|yeah|sure|do it|ok)\b/i.test(t)) answer('accept'); else if(/\b(no|don't|cancel)\b/i.test(t)) answer('decline'); return; }
+    ask(t); };
+  rec.onend = () => $('mic').classList.remove('on');
+  $('mic').onclick = () => { $('mic').classList.add('on'); rec.start(); };
+} else { $('mic').title = 'Voice input needs Chrome; type instead'; $('mic').onclick = () => $('q').focus(); }
+
+document.querySelectorAll('[data-demo]').forEach(b => b.onclick = async () => {
+  const a = b.dataset.demo;
+  if(a==='reset'){ await fetch('/api/demo/reset', {method:'POST'}); convo.innerHTML=''; }
+  if(a==='advance'){ await fetch('/api/demo/clock', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({advance:60})}); }
+  if(a==='motion'){ await fetch('/api/demo/inject', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({room:'kitchen', event:'motion'})}); }
+  refresh();
+});
+refresh(); setInterval(refresh, 5000);
+</script>
+</body>
+</html>
